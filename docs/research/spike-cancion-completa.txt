@@ -1,0 +1,6 @@
+cancion = 1_spotdown.org.mp3
+duracion = 229.6 s (3.83 min)
+demucs tiempo = 411.9 s (total proceso 412.4 s)
+factor = 1.79x tiempo real
+RAM pico = 1525 MB
+stems en: D:\charf1\tmp\spike\cancion-completa

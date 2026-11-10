@@ -1,0 +1,14 @@
+== Spike demucs/whisper (clip30) ==
+
+[demucs extraer_stems]
+tiempo = 80.3 s; RAM pico = 1019 MB
+  drums.wav -> drums.wav
+  bass.wav -> bass.wav
+  other.wav -> other.wav
+  vocals.wav -> vocals.wav
+[whisper transcribir modelo=base]
+tiempo = 19.8 s; RAM pico = 630 MB; palabras = 29; chars = 102
+  texto: I hate on the low Baby, let me show you Close to me right away Only one No regrets in such a short time Should I miss your service
+[whisper transcribir modelo=small]
+tiempo = 420.7 s; RAM pico = 738 MB; palabras = 35; chars = 120
+  texto: I don't know how to make you feel like a show, don't tell me how to die All in one I know we've been through such a long time, should I not show so wrong?

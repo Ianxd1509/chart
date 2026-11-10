@@ -1,0 +1,12 @@
+# torch se instala APARTE y PRIMERO desde el indice solo-CPU (instalar.ps1 paso 4):
+#   pip install --index-url https://download.pytorch.org/whl/cpu torch
+# Si pip lo instalara desde esta lista con una venv sin torch, bajaria el wheel
+# CUDA (~2.5 GB). torch quedara "satisfecho" aca si el paso 4 ya lo puso.
+torch
+demucs
+faster-whisper
+librosa
+soundfile
+psutil
+pandas
+pytest

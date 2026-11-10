@@ -1,0 +1,16 @@
+venv/
+tmp/
+.pipcache/
+CL/*
+!CL/.gitkeep
+modelos/*
+!modelos/.gitkeep
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# salida del spike: WAVs de solo medicion, pesan ~180 MB, no van al repo
+docs/research/spike-salida/spike/**/*.wav
+
+# fixture privada: 30 s de un track de terceros; solo existe en la maquina del autor
+tests/fixtures/clip30.mp3
