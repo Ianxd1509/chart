@@ -14,6 +14,7 @@ _DEFAULTS: dict[str, dict[str, str]] = {
     "salida": {"carpeta": "CL"},
     "stems": {"modelo": "htdemucs", "segmento": "6", "batch": "1"},
     "letras": {"activada": "true", "modelo": "base", "vad": "true"},
+    "sistema": {"ram_minima_gb": "1.5"},
 }
 
 
@@ -24,6 +25,10 @@ def _normalizar(cfg: dict) -> dict:
     cfg["letras"]["activada"] = activada in _VERDADES
     vad = str(cfg["letras"].get("vad", "true")).strip().lower()
     cfg["letras"]["vad"] = vad in _VERDADES
+    try:
+        cfg["sistema"]["ram_minima_gb"] = float(str(cfg["sistema"]["ram_minima_gb"]).replace(",", "."))
+    except (KeyError, ValueError, TypeError):
+        cfg["sistema"]["ram_minima_gb"] = 1.5
     return cfg
 
 

@@ -55,6 +55,12 @@ a medias en `CL\`.
   (medido: las primeras palabras del anime OP salían a los 91 s; con `false`,
   la cobertura quedó casi completa). El default actual es `false`; si ves
   palabras inventadas en instrumentales muy limpios, vuelve a `true`.
+- `[sistema] ram_minima_gb = 1.5`: memoria libre mínima que el pipeline exige
+  ANTES de cada etapa (stems/letras/charting/empaquetado). En máquinas muy
+  ajustadas (p. ej. 8 GB con Windows) el 1.5 por defecto puede abortar en la
+  práctica entre etapas — baja este número (p. ej. 1.0) si la conversión muere
+  siempre con "recursos insuficientes"; el guard EMPEZANDO (4 GB) no cambia y
+  si aborta, no deja cambios en `CL\`.
 
 ## Uso: convertir una canción
 

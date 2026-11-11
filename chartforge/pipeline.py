@@ -78,11 +78,21 @@ def _ram_libre() -> int:
     return int(psutil.virtual_memory().available)
 
 
-def _guarda(antes_de: str) -> None:
-    """Lanza ErrorRecursos si no hay disco/RAM suficientes antes de la etapa."""
+def _guarda(antes_de: str, cfg: dict | None = None) -> None:
+    """Lanza ErrorRecursos si no hay disco/RAM suficientes antes de la etapa.
+
+    El mínimo de RAM se toma de cfg[sistema][ram_minima_gb] cuando se pasa una
+    config; si no, usa RAM_MINIMA_BYTES (constante parcheable en tests).
+    """
     espacio = _espacio_libre()
     ram = _ram_libre()
-    if espacio >= ESPACIO_MINIMO_BYTES and ram >= RAM_MINIMA_BYTES:
+    ram_minima = RAM_MINIMA_BYTES
+    if cfg is not None and "sistema" in cfg:
+        try:
+            ram_minima = int(float(cfg["sistema"]["ram_minima_gb"]) * 1024**3)
+        except (KeyError, ValueError, TypeError):
+            ram_minima = RAM_MINIMA_BYTES
+    if espacio >= ESPACIO_MINIMO_BYTES and ram >= ram_minima:
         return
     raise ErrorRecursos(
         "recursos insuficientes para continuar antes de {0}: "
@@ -93,7 +103,7 @@ def _guarda(antes_de: str) -> None:
             espacio / 1024**3,
             ESPACIO_MINIMO_BYTES / 1024**3,
             ram / 1024**3,
-            RAM_MINIMA_BYTES / 1024**3,
+            ram_minima / 1024**3,
         )
     )
 
@@ -358,7 +368,7 @@ def run_pipeline(
     try:
         mix_wav = decodificar(audio, job / "mix.wav")
 
-        _guarda("stems")
+        _guarda("stems", cfg)
         reportar("stems", None, "Separando stems con demucs (puede tardar ~1.8x la cancion)...")
         ruta_stems = job / "stems"
         stems_demucs = extraer_stems(
@@ -372,7 +382,7 @@ def run_pipeline(
             for clave, interno in STEMS_DEMUCS_A_INTERNOS.items()
         }
 
-        _guarda("letras")
+        _guarda("letras", cfg)
         palabras: list[tuple[float, str]] = []
         if cfg["letras"]["activada"]:
             reportar("letras", None, "Transcribiendo la voz con whisper...")
@@ -383,14 +393,14 @@ def run_pipeline(
             except Exception as error:  # sin letra fiable -> #sin-letras y seguir
                 reportar("letras", None, f"Aviso: no se pudo transcribir la letra ({error}).")
 
-        _guarda("charting")
+        _guarda("charting", cfg)
         reportar("charting", None, "Generando gemas de los 4 instrumentos...")
         pista = _crear_pista(
             mix_wav, stems_demucs, palabras,
             informar=lambda mensaje: reportar("charting", None, mensaje),
         )
 
-        _guarda("empaquetado")
+        _guarda("empaquetado", cfg)
         reportar("empaquetado", None, "Escribiendo song.ini, notes.chart y OGG...")
         carpeta = crear_carpeta_cancion(
             stems_internos, mix_wav, pista, titulo, artista, destino=job,

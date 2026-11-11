@@ -38,14 +38,14 @@ def leer_tags(audio: Path) -> dict[str, str]:
     ]
     try:
         resultado = subprocess.run(
-            comando, capture_output=True, text=True, timeout=_TIMEOUT_FFPROBE_S
+            comando, capture_output=True, timeout=_TIMEOUT_FFPROBE_S
         )
     except (OSError, subprocess.SubprocessError):
         return {}
     if resultado.returncode != 0:
         return {}
     try:
-        data = json.loads(resultado.stdout or "{}")
+        data = json.loads(resultado.stdout.decode("utf-8", errors="replace") or "{}")
     except json.JSONDecodeError:
         return {}
     tags = (data.get("format") or {}).get("tags") or {}
@@ -80,7 +80,7 @@ def extraer_caratula(audio: Path, destino_jpg: Path) -> Path | None:
     ]
     try:
         resultado = subprocess.run(
-            comando, capture_output=True, text=True, timeout=_TIMEOUT_CARATULA_S
+            comando, capture_output=True, timeout=_TIMEOUT_CARATULA_S
         )
     except (OSError, subprocess.SubprocessError):
         return None
