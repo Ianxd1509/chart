@@ -19,7 +19,11 @@ def transcribir(wav_vocals, cfg: dict, reportar=print) -> list[tuple[float, str]
     datos, _sr = librosa.load(str(wav_vocals), sr=16000, mono=True)
     modelo = faster_whisper.WhisperModel(cfg["letras"]["modelo"], device="cpu", compute_type="int8")
     reportar(f"Transcribiendo letras con whisper {cfg['letras']['modelo']}...")
-    segmentos, info = modelo.transcribe(datos, word_timestamps=True, vad_filter=True)
+    segmentos, info = modelo.transcribe(
+        datos,
+        word_timestamps=True,
+        vad_filter=bool(cfg["letras"].get("vad", True)),
+    )
     palabras: list[tuple[float, str]] = []
     for segmento in segmentos:  # el generador corre la transcripción
         for palabra in segmento.words:

@@ -14,3 +14,6 @@ docs/research/spike-salida/spike/**/*.wav
 
 # fixture privada: 30 s de un track de terceros; solo existe en la maquina del autor
 tests/fixtures/clip30.mp3
+
+# carpetas convertidas de referencia (pueden ser audio de terceros); solo locales
+backups-local/

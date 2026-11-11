@@ -13,7 +13,7 @@ _VERDADES = ("1", "true", "si", "sí", "on", "yes", "verdadero")
 _DEFAULTS: dict[str, dict[str, str]] = {
     "salida": {"carpeta": "CL"},
     "stems": {"modelo": "htdemucs", "segmento": "6", "batch": "1"},
-    "letras": {"activada": "true", "modelo": "base"},
+    "letras": {"activada": "true", "modelo": "base", "vad": "true"},
 }
 
 
@@ -22,6 +22,8 @@ def _normalizar(cfg: dict) -> dict:
     cfg["stems"]["batch"] = int(cfg["stems"]["batch"])
     activada = str(cfg["letras"]["activada"]).strip().lower()
     cfg["letras"]["activada"] = activada in _VERDADES
+    vad = str(cfg["letras"].get("vad", "true")).strip().lower()
+    cfg["letras"]["vad"] = vad in _VERDADES
     return cfg
 
 

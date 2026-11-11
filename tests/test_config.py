@@ -14,6 +14,7 @@ def test_defaults_ok():
     assert cfg["stems"]["batch"] == 1
     assert cfg["letras"]["activada"] is True
     assert cfg["letras"]["modelo"] == "base"
+    assert cfg["letras"]["vad"] is True
 
 
 def test_cargar_config_le_archivo(tmp_path):
@@ -35,6 +36,18 @@ def test_cargar_config_le_archivo(tmp_path):
     assert cfg["salida"]["carpeta"] == "OTRA"
     assert cfg["stems"]["segmento"] == 8
     assert isinstance(cfg["stems"]["segmento"], int)
+
+
+def test_cargar_config_vad_false(tmp_path):
+    ruta = tmp_path / "config.ini"
+    ruta.write_text(textwrap.dedent("""\
+        [letras]
+        activada = true
+        modelo = base
+        vad = false
+        """), encoding="utf-8")
+    cfg = config.cargar_config(str(ruta))
+    assert cfg["letras"]["vad"] is False
 
 
 def test_rutas_independientes_del_cwd(tmp_path, monkeypatch):

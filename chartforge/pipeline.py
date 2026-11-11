@@ -202,9 +202,9 @@ _TABLA_PROHIBIDA = str.maketrans("", "", '"\\')  # el chart no puede con `"` ni 
 def construir_letra(palabras: list[tuple[float, str]]) -> Letra | None:
     """Agrupa palabras en lineas: pausa > PAUSA_LINEA_S abre una linea nueva.
 
-    Descarta `"` y `\` de cada palabra (whisper puede emitirlos; el .chart no
-    los admite y abortaria en el ULTIMO paso). Si no queda ninguna palabra
-    real, no hay letra.
+    Descarta las comillas dobles y las barras invertidas de cada palabra
+    (whisper puede emitirlas; el .chart no las admite y abortaria en el
+    ULTIMO paso). Si no queda ninguna palabra real, no hay letra.
     """
     if not palabras:
         return None
@@ -381,7 +381,9 @@ def run_pipeline(
         _guarda("empaquetado")
         reportar("empaquetado", None, "Escribiendo song.ini, notes.chart y OGG...")
         carpeta = crear_carpeta_cancion(
-            stems_internos, mix_wav, pista, titulo, artista, destino=job
+            stems_internos, mix_wav, pista, titulo, artista, destino=job,
+            audio_origen=Path(audio),
+            reportar=_reportador_de_etapa("empaquetado", reportar),
         )
         return _mover_a_cl(carpeta, destino)
     finally:

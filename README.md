@@ -48,8 +48,12 @@ a medias en `CL\`.
 - `[salida] carpeta = CL`: carpeta de salida junto al proyecto (editable; si
   la cambias, apunta también el juego a esa carpeta).
 - `[stems] modelo = htdemucs`, `segmento = 6`: modelo demucs y trozos de CPU.
-- `[letras] activada = true`, `modelo = base`: whisper on/off y su tamaño;
-  `small` es ~5x mas lento y en mediciones no escribio mejor que `base`.
+- `[letras] activada = true`, `modelo = base`, `vad = false`: whisper on/off y su tamaño;
+  `small` es ~5x mas lento y en mediciones no escribio mejor que `base`. `vad = true`
+  (filtro de voz) era el defecto original y se traga la voz cantada densa
+  (medido: las primeras palabras del anime OP salían a los 91 s; con `false`,
+  la cobertura quedó casi completa). El default actual es `false`; si ves
+  palabras inventadas en instrumentales muy limpios, vuelve a `true`.
 
 ## Uso: convertir una canción
 
@@ -64,7 +68,10 @@ a medias en `CL\`.
 4. Al terminar, la carpeta queda en `CL\<Artista> - <Titulo>` con
    `song.ini`, `notes.chart`, `song.ogg` y el OGG de cada stem
    (`drums.ogg`, `guitar.ogg`, `bass.ogg`, `vocals.ogg`). ¡Nada se instala
-   en otra parte!
+   en otra parte! El `song.ini` incluye `album`/`year`/`genre` (si el
+   archivo los trae), los `diff_*` segun las dificultades generadas
+   (cero = pista vacia) y, cuando el audio trae caratula embebida,
+   `album.jpg` en la raiz de la carpeta.
 
 Reglas:
 

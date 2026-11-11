@@ -82,6 +82,70 @@ def test_song_ini_campos_minimos_sin_delay(tmp_path, rutas_audio, pista_sintetic
     assert "song_length" not in campos
 
 
+def test_song_ini_diff_y_tags(tmp_path, rutas_audio, pista_sintetica, monkeypatch):
+    """#3: diff_* refleja las dificultades generadas + album/year/genre del origen."""
+    monkeypatch.setattr(
+        "chartforge.etapas.empaquetado.leer_tags",
+        lambda _audio: {"album": "99.9", "year": "2019", "genre": "J-Rock"},
+    )
+    monkeypatch.setattr(
+        "chartforge.etapas.empaquetado.extraer_caratula", lambda _audio, _dst: None
+    )
+    mensajes: list[str] = []
+    audio_fake = tmp_path / "origen.mp3"
+    audio_fake.write_bytes(b"fake")
+    carpeta = crear_carpeta_cancion(
+        _stems_de(rutas_audio), rutas_audio["mix"], pista_sintetica,
+        titulo="T", artista="A", destino=tmp_path,
+        audio_origen=audio_fake, reportar=mensajes.append,
+    )
+    parser = configparser.ConfigParser()
+    parser.optionxform = str
+    parser.read(str(carpeta / "song.ini"), encoding="utf-8")
+    campos = {k.lower(): v.lower() for s in parser.sections() for k, v in parser.items(s)}
+    assert campos["album"] == "99.9"
+    assert campos["year"] == "2019"
+    assert campos["genre"] == "j-rock"
+    assert campos["diff_guitar"] == "4"  # Expert con gema (pista_sintetica)
+    assert campos["diff_drums"] == "4"
+    assert campos["diff_bass"] == "0"  # Expert sin gemas
+    assert campos["diff_band"] == "0"  # min(guitarra, bajo, bateria)
+    assert campos["diff_vocals"] == "0"
+    assert campos["pro_drums"] == "false"
+    assert "delay" not in campos and "song_length" not in campos
+    assert any("carátula" in m for m in mensajes), "aviso de carátula ausente"
+
+
+def test_song_ini_caratula_embebida(tmp_path, rutas_audio, pista_sintetica, monkeypatch):
+    """#4: si el audio trae carátula, se incluye como album.jpg."""
+    def _extraer(_audio, destino):
+        Path(destino).write_bytes(b"\xff\xd8\xfffake")
+        return Path(destino)
+
+    monkeypatch.setattr(
+        "chartforge.etapas.empaquetado.leer_tags", lambda _a: {}
+    )
+    monkeypatch.setattr(
+        "chartforge.etapas.empaquetado.extraer_caratula", _extraer
+    )
+    carpeta = crear_carpeta_cancion(
+        _stems_de(rutas_audio), rutas_audio["mix"], pista_sintetica,
+        titulo="T", artista="A", destino=tmp_path,
+        audio_origen=tmp_path / "origen.mp3", reportar=lambda *a, **k: None,
+    )
+    assert (carpeta / "album.jpg").is_file()
+
+
+def test_song_ini_sin_audio_origen(tmp_path, rutas_audio, pista_sintetica):
+    carpeta = crear_carpeta_cancion(
+        _stems_de(rutas_audio), rutas_audio["mix"], pista_sintetica,
+        titulo="T", artista="A", destino=tmp_path,
+    )
+    contenido = (carpeta / "song.ini").read_text(encoding="utf-8")
+    assert "album" not in contenido
+    assert not (carpeta / "album.jpg").exists()
+
+
 def test_notes_chart_roundtrip(tmp_path, rutas_audio, pista_sintetica):
     carpeta = crear_carpeta_cancion(
         _stems_de(rutas_audio), rutas_audio["mix"], pista_sintetica,
