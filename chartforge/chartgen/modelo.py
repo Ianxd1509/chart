@@ -46,6 +46,8 @@ class PistaCancion:
     bpm: float
     letra: Letra | None
     gemas: dict[str, dict[str, list[Gema]]]  # instrumento → dificultad → gemas
+    frases_sp: list[tuple[int, int]] = field(default_factory=list)  # (tick inicio, longitud ticks)
+    secciones: list[tuple[int, str]] = field(default_factory=list)   # (tick, nombre) para [Events]
 
     # ----------------------------------------------------------------------
     def to_chart_text(self, metadatos: dict[str, str]) -> str:
@@ -84,6 +86,8 @@ class PistaCancion:
                     formatos.escribir_gema_linea(instrumento, g.lane, g.tick, g.longitud)
                     for g in sorted(gemas, key=lambda g: (g.tick, g.lane))
                 ]
+                cuerpo += [f"{tick} = S 2 {longitud}" for tick, longitud in self.frases_sp]
+                cuerpo.sort(key=lambda linea: int(linea.split("=", 1)[0]))
                 parrafos.append(
                     f"[{dificultad}{nombre}]\n" + "{\n" + "\n".join(cuerpo) + "\n}"
                 )
@@ -91,21 +95,34 @@ class PistaCancion:
 
     # ----------------------------------------------------------------------
     def _eventos_texto(self) -> list[str]:
-        """[Events] globales: letra (lyric/phrase_start/phrase_end) o #sin-letras."""
+        """[Events] globales: letra (lyric/phrase_*), secciones ("section X") o #sin-letras."""
+        lineas_eventos: list[tuple[int, str]] = []
+
         if self.letra is None:
-            return ['0 = E "#sin-letras"']
-        ordenadas = sorted(self.letra.palabras, key=lambda p: p[0])
-        lineas = sorted(self.letra.lineas, key=lambda l: l[0])
-        eventos: list[str] = []
-        for indice, (t_linea, _texto) in enumerate(lineas):
-            fin_linea = lineas[indice + 1][0] if indice + 1 < len(lineas) else float("inf")
-            palabras_linea = [p for p in ordenadas if t_linea <= p[0] < fin_linea]
-            eventos.append(f'{ticks_de_tiempo(t_linea, self.bpm)} = E "phrase_start"')
-            for t_palabra, palabra in palabras_linea:
-                eventos.append(LETRA_LINEA(ticks_de_tiempo(t_palabra, self.bpm), palabra))
-            if palabras_linea:
-                t_fin = max(p[0] for p in palabras_linea)
-            else:
-                t_fin = t_linea
-            eventos.append(f'{ticks_de_tiempo(t_fin, self.bpm)} = E "phrase_end"')
-        return eventos
+            lineas_eventos.append((0, '0 = E "#sin-letras"'))
+        else:
+            ordenadas = sorted(self.letra.palabras, key=lambda p: p[0])
+            lineas = sorted(self.letra.lineas, key=lambda l: l[0])
+            eventos: list[str] = []
+            for indice, (t_linea, _texto) in enumerate(lineas):
+                fin_linea = lineas[indice + 1][0] if indice + 1 < len(lineas) else float("inf")
+                palabras_linea = [p for p in ordenadas if t_linea <= p[0] < fin_linea]
+                eventos.append((ticks_de_tiempo(t_linea, self.bpm),
+                                f'{ticks_de_tiempo(t_linea, self.bpm)} = E "phrase_start"'))
+                for t_palabra, palabra in palabras_linea:
+                    tick = ticks_de_tiempo(t_palabra, self.bpm)
+                    eventos.append((tick, LETRA_LINEA(tick, palabra)))
+                if palabras_linea:
+                    t_fin = max(p[0] for p in palabras_linea)
+                else:
+                    t_fin = t_linea
+                t_tick = ticks_de_tiempo(t_fin, self.bpm)
+                eventos.append((t_tick, f'{t_tick} = E "phrase_end"'))
+            lineas_eventos.extend(eventos)
+
+        for tick, nombre in self.secciones:
+            nombre_limpio = str(nombre).replace('"', "").replace("\\", "").strip() or "Section"
+            lineas_eventos.append((int(tick), f'{int(tick)} = E "section {nombre_limpio}"'))
+
+        lineas_eventos.sort(key=lambda par: par[0])
+        return [linea for _tick, linea in lineas_eventos]

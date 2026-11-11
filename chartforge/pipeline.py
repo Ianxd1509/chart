@@ -28,6 +28,11 @@ from chartforge.chartgen.drums import generar as generar_bateria
 from chartforge.chartgen.features import ExtraccionStems
 from chartforge.chartgen.guitar_bass import generar as generar_cuerdas
 from chartforge.chartgen.modelo import Letra, PistaCancion
+from chartforge.chartgen.secciones import (
+    energias_por_compas,
+    proponer_frases_sp,
+    proponer_secciones,
+)
 from chartforge.chartgen.vocals import generar as generar_voz
 
 # Guardas de recursos (plan Task 9): items a nivel de módulo, parcheables.
@@ -277,7 +282,14 @@ def _crear_pista(
                 "cancion se guarda igual."
             )
     gemas = aplicar_dificultades(experto, bpm)
-    return PistaCancion(bpm=bpm, letra=letra, gemas=gemas)
+    try:
+        rms = energias_por_compas(mix_wav, bpm)
+        frases_sp = proponer_frases_sp(rms, bpm)
+        secciones = proponer_secciones(rms)
+    except Exception:  # SP/secciones son extra: nunca abortar por ellos
+        frases_sp, secciones = [], []
+    return PistaCancion(bpm=bpm, letra=letra, gemas=gemas,
+                        frases_sp=frases_sp, secciones=secciones)
 
 
 # ---------------------------------------------------------------------------

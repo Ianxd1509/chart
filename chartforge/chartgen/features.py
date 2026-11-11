@@ -15,6 +15,10 @@ import soundfile as sf
 
 BANDA_BAJA_HZ = 200.0
 BANDA_MEDIA_HZ = 2000.0
+BANDA_SUB_HZ = 160.0
+BANDA_TOM_HZ = 350.0
+BANDA_BODY_HZ = 1000.0
+BANDA_SNAP_HZ = 4000.0
 _VENTANA_ONSET_S = 0.10  # ventana de energía tras cada onset
 _VENTANA_PITCH_S = 0.30  # ventana pyin por tiempo pedido
 _HOP = 512
@@ -51,16 +55,21 @@ class ExtraccionStems:
         return self._mono[nombre_stem]
 
     # ----------------------------------------------------------------------
-    def onsets(self, nombre_stem: str) -> np.ndarray:
-        """Tiempos (s) de los onsets del stem (librosa, con backtrack)."""
+    def onsets(self, nombre_stem: str, delta: float | None = None) -> np.ndarray:
+        """Tiempos (s) de los onsets del stem (librosa, con backtrack).
+
+        delta=None → sensibilidad por defecto de librosa; un valor menor
+        detecta onsets más débiles (batería).
+        """
         datos = self._cargar(nombre_stem)
         sr = self._sr[nombre_stem]
         if datos.size == 0 or not datos.any():
             return np.array([], dtype=np.float64)
         envolvente = librosa.onset.onset_strength(y=datos, sr=sr, hop_length=_HOP)
-        picos = librosa.onset.onset_detect(
-            onset_envelope=envolvente, sr=sr, hop_length=_HOP, backtrack=True
-        )
+        kwargs = {"backtrack": True, "sr": sr, "hop_length": _HOP}
+        if delta is not None:
+            kwargs["delta"] = float(delta)
+        picos = librosa.onset.onset_detect(onset_envelope=envolvente, **kwargs)
         return librosa.frames_to_time(picos, sr=sr, hop_length=_HOP)
 
     def duracion(self, nombre_stem: str) -> float:
@@ -90,6 +99,39 @@ class ExtraccionStems:
                 "alta": float(espectro[frecuencias >= BANDA_MEDIA_HZ].sum()),
             })
         return pd.DataFrame(filas, columns=["tiempo", "baja", "media", "alta"])
+
+    def bandas_detalle(self, nombre_stem: str, onsets: np.ndarray) -> pd.DataFrame:
+        """DataFrame(tiempo, sub, tom, body, snap, brillante) — spec de batería v2.
+
+        sub < 160 Hz (kick) · tom 160-350 (tom de piso/medio) · body 350-1000
+        (cuerpo del snare) · snap 1000-4000 (alambre del snare/hi-hat) ·
+        brillante > 4000 (platillo). Heurística honesta: un bombo y un tom de
+        ~80-100 Hz son indistinguibles sin pitch tracking, y se asignan a kick.
+        """
+        datos = self._cargar(nombre_stem)
+        sr = self._sr[nombre_stem]
+        n_fft = 2048
+        frecuencias = np.fft.rfftfreq(n_fft, 1.0 / sr)
+        filas = []
+        for tiempo in np.asarray(onsets, dtype=np.float64):
+            i0 = max(0, int(tiempo * sr))
+            i1 = min(len(datos), i0 + int(_VENTANA_ONSET_S * sr))
+            segmento = datos[i0:i1]
+            if segmento.size == 0:
+                filas.append({"tiempo": float(tiempo), "sub": 0.0, "tom": 0.0,
+                              "body": 0.0, "snap": 0.0, "brillante": 0.0})
+                continue
+            ventana = np.hanning(segmento.size)
+            espectro = np.abs(np.fft.rfft(segmento * ventana, n=n_fft)) ** 2
+            filas.append({
+                "tiempo": float(tiempo),
+                "sub": float(espectro[frecuencias < BANDA_SUB_HZ].sum()),
+                "tom": float(espectro[(frecuencias >= BANDA_SUB_HZ) & (frecuencias < BANDA_TOM_HZ)].sum()),
+                "body": float(espectro[(frecuencias >= BANDA_TOM_HZ) & (frecuencias < BANDA_BODY_HZ)].sum()),
+                "snap": float(espectro[(frecuencias >= BANDA_BODY_HZ) & (frecuencias < BANDA_SNAP_HZ)].sum()),
+                "brillante": float(espectro[frecuencias >= BANDA_SNAP_HZ].sum()),
+            })
+        return pd.DataFrame(filas, columns=["tiempo", "sub", "tom", "body", "snap", "brillante"])
 
     def pitch_principal(self, nombre_stem: str, tiempos: np.ndarray) -> np.ndarray:
         """F0 dominante (pyin) en cada tiempo pedido; NaN cuando no hay tono."""

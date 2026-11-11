@@ -9,6 +9,7 @@ canción a la vez, todo en una sola carpeta de proyecto.
 - Org: Windows 11 consola (arrastrar y soltar; sin navegador, sin servidor).
 - Fuente de verdad del diseño: `docs/superpowers/specs/2026-11-10-chartforge-design.md`.
 - Formatos Clone Hero/YARG implementados: `docs/research/clone-hero-formatos.md`.
+- Licencia: **MIT** (ver `LICENSE`).
 
 ## Requisitos
 
@@ -79,7 +80,16 @@ Reglas:
   (bórrala o renómbrala y vuelve a intentar).
 - **Pistas vacías**: si un stem (p. ej. sin batería real) queda sin notas, la
   conversión avisa en consola y esa pista sale vacía; el audio se guarda igual.
-- **Ocupación**: cada canción convertida pesa ~15-40 MB en `CL\` (5 OGG q6).
+- **Batería (v2)**: kick por banda sub (<160 Hz, grid 1/8), snare (350–1000 Hz),
+  tom (160–350 Hz tonal, lane blue), cymbal (>4 kHz, lane green); 5 carriles
+  estándar (`pro_drums=False`). Es una **heurística tonal**: un tom de ~80-100 Hz
+  no se distingue de un bombo; el chart queda completo y jugable, su nivel es
+  el de un autobreak genérico, no el de un charter humano.
+- **Star Power y secciones**: el chart lleva frases `S 2` (Star Power) en los
+  picos de energía del mix y secciones globales `Intro/Verse/Chorus/Outro`
+  (aproximación por energía, no entiende la canción). Si la selección del mix
+  es ambigua, simplemente no se escriben.
+- **Tamaños**: cada canción convertida pesa ~15-40 MB en `CL\` (5 OGG q6 + chart).
 - **Letras**: whisper transcribe la voz; si el audio con voz es muy sucio o
   la etapa falla, la canción sale igual con el evento `#sin-letras` (las
   gemas de voz se generan por onsets, el audio `vocals.ogg` siempre está).
@@ -92,6 +102,24 @@ En Clone Hero: **Settings ▸ Video/General ▸ Song Folders** → agregar
 `D:\charf1\CL` (o copia la carpeta de una canción a tu carpeta de canciones
 habitual). Después, **Re-scan Songs**. La verificación paso a paso con el
 juego real está en `docs/research/verificacion-manual.md`.
+
+## Exportar una canción como `.sng`
+
+El formato `.sng` es un contenedor único (un archivo por canción) que YARG y
+Clone Hero aceptan como alternativa a la carpeta suelta. Para una canción con
+la carpeta ya armada en `CL\`:
+
+```powershell
+cd D:\charf1
+.\venv\Scripts\python.exe -m chartforge.sng "CL\MOB CHOIR, sajou no hana - 99.9"
+```
+
+Genera `CL\MOB CHOIR, sajou no hana - 99.9.sng` junto a la carpeta. El `.sng`
+contiene `notes.chart` y el resto de los archivos (enmascarados con el spec
+público `SNGPKG` v1; `song.ini` se exporta como metadatos, no como archivo).
+La implementación es propia (no se copió código de terceros) y está cubierta
+por tests con un parser independiente dentro del test (`tests/test_sng.py`).
+El `.sng` es opcional: la carpeta suelta ya carga en ambos juegos.
 
 ## Desinstalación: borrar la carpeta
 
